@@ -315,23 +315,21 @@ To run the training, we need to:
 ### Gymnasium: 
 https://gymnasium.farama.org/index.html 
 
+<img width="2025" height="484" alt="image" src="https://github.com/user-attachments/assets/7a053c3a-1520-481b-be4c-48bb5f1ccb67" />
+
 In the world of Reinforcement Learning (RL), you have two distinct sides:
 1. The Environment: The world where the robot lives (Isaac Sim/Isaac Lab). This involves complex physics, friction, lighting, and USD stages.
 2. The Agent: The AI brain (neural network) that wants to control the robot. It doesn't know anything about physics or 3D rendering; it only understands numbers (data inputs and action outputs).
-
 **Gymnasium** is a library that sits in the middle so that any Agent can interact with Environments without needing to know how the physics engine works. 
 It wraps the code needed to run any environment inside a class and provides standard API functions that allow users to run the main actions needed to perform a simulation.
 With this, I can easily switch the agents being tested on the environment, or switch the environments on which I'm testing my agents.
-With Gymnasium: All environments expose the same interface and get the same function names (env.reset(), env.step(action))
+- With Gymnasium: All environments expose the same interface and get the same function names (env.reset(), env.step(action))
 Plug-and-play: Agents work with any Gymnasium-compliant environment instantly
-
-Without it, every environment (Isaac Lab, MuJoCo, PyBullet) has different APIs: different function names, data formats, observation structures. So Each RL library (Stable Baselines, RSL RL, RL Games) would need custom code for every simulator
+- Without it, every environment (Isaac Lab, MuJoCo, PyBullet) has different APIs: different function names, data formats, observation structures. So Each RL library (Stable Baselines, RSL RL, RL Games) would need custom code for every simulator
 Agents can't be reused across environments without rewriting integration code
 Without Gymnasium, you'd need custom glue code for every agent-environment pair
 
-
-- Registration: Once your code is registered within Gymnasium, it can be easily accessed from anywhere by using these templated API calls:
-
+Some of the Gymnasium custom functions:
 - Register: `gym.register(id, entry_point, **kwargs)` — add an environment name and how to create it so others can instantiate it by that name.
 - Make: `gym.make(id, **kwargs)` — create an environment instance from a registered name with one call.
 - Reset: `env.reset()` — start or restart an episode and return the initial observation (and info).
@@ -341,7 +339,91 @@ Without Gymnasium, you'd need custom glue code for every agent-environment pair
 - Render: `render()` shows or returns a visual frame of the environment so you can see what the simulator is doing (for debugging, recording, or human viewing).
 - Wrappers: `gym.wrappers.* (e.g., RecordVideo, TimeLimit)` — add recording, time limits, or transforms. Allows users to modify or adapt its interface without changing the original code
 
-<img width="2025" height="484" alt="image" src="https://github.com/user-attachments/assets/7a053c3a-1520-481b-be4c-48bb5f1ccb67" />
+
+
+
+## Register Gym Environments: `__init__.py`
+`C:\Users\myali\isaaclab\source\isaaclab_tasks\isaaclab_tasks\manager_based\classic\cartpole\__init__.py`
+
+- Once your code is registered within Gymnasium, it can be easily accessed from anywhere by using these templated API calls.
+
+- `_init_.py`: converts the Python folders in this project into a package.
+  - This makes it easier for users to import functions implemented by the code in this folder and provides callable public APIs.
+  - It's used to import the `CartpoleEnvCfg` class, which is used to generate the env config object
+  - It also registers this project into Gymnasium: It tells the Gymnasium interface which env config class to import: `entry_point=f"{__name__}.cartpole_env:CartpoleEnv"`
+
+- This particular `_init_.py` file is registering these 5 envs by their names: "Isaac-Cartpole-v0", "Isaac-Cartpole-RGB-v0", "Isaac-Cartpole-Depth-v0", "Isaac-Cartpole-RGB-ResNet18-v0", "Isaac-Cartpole-RGB-TheiaTiny-v0",
+ 
+```py
+"""
+Cartpole balancing environment.
+"""
+
+import gymnasium as gym
+
+from . import agents
+
+##
+# Register Gym environments.
+##
+
+gym.register(
+    id="Isaac-Cartpole-v0",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.cartpole_env_cfg:CartpoleEnvCfg",
+        "rl_games_cfg_entry_point": f"{agents.__name__}:rl_games_ppo_cfg.yaml",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:CartpolePPORunnerCfg",
+        "rsl_rl_with_symmetry_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:CartpolePPORunnerWithSymmetryCfg",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_ppo_cfg.yaml",
+        "sb3_cfg_entry_point": f"{agents.__name__}:sb3_ppo_cfg.yaml",
+    },
+)
+
+gym.register(
+    id="Isaac-Cartpole-RGB-v0",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.cartpole_camera_env_cfg:CartpoleRGBCameraEnvCfg",
+        "rl_games_cfg_entry_point": f"{agents.__name__}:rl_games_camera_ppo_cfg.yaml",
+    },
+)
+
+gym.register(
+    id="Isaac-Cartpole-Depth-v0",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.cartpole_camera_env_cfg:CartpoleDepthCameraEnvCfg",
+        "rl_games_cfg_entry_point": f"{agents.__name__}:rl_games_camera_ppo_cfg.yaml",
+    },
+)
+
+gym.register(
+    id="Isaac-Cartpole-RGB-ResNet18-v0",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.cartpole_camera_env_cfg:CartpoleResNet18CameraEnvCfg",
+        "rl_games_cfg_entry_point": f"{agents.__name__}:rl_games_feature_ppo_cfg.yaml",
+    },
+)
+
+gym.register(
+    id="Isaac-Cartpole-RGB-TheiaTiny-v0",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.cartpole_camera_env_cfg:CartpoleTheiaTinyCameraEnvCfg",
+        "rl_games_cfg_entry_point": f"{agents.__name__}:rl_games_feature_ppo_cfg.yaml",
+    },
+)
+
+```
+
+
 
 ```
 train.py                        GYMNASIUM                     __init__.py                      cartpole_env_cfg.py
