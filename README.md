@@ -129,6 +129,8 @@ class ActionsCfg:
 ```
 
 **1.1.2: Markov Decision Process (MDP)**
+MDP is a mathematical model that, given an agent's current state and its action, defines its what happens to it, updates its new state and calculates a reward for the result of its action. 
+The RL algorithm (skrl, rl_games etc) will then take the result of the reward function to learn and suggest the next best action for the agent that optimizes the reward function. 
 
 ***Observations Configuration Class: `ObservationsCfg`***
 - Inputs into the deep network (X)
@@ -299,21 +301,9 @@ class CartpoleEnvCfg(ManagerBasedRLEnvCfg):
 **MDP Cycle:**
 <img width="1753" height="589" alt="image" src="https://github.com/user-attachments/assets/434ddbb8-6f89-4dd1-b176-87651410e2fa" />
 
-# 2. RUN TRAINING: `train.py`
-`C:\Users\[YOUR USER]\isaaclab\scripts\reinforcement_learning\rl_games\train.py`
-
-To continue the comparison with video game, this is when we push Play and the characters start performing their actions on the level. Or when the crew ***builds the scenario***, allocates the props and the actors ***start the rehearsal***.
-This is when we implement Reinforcement Learning and the algorithm starts learning with the results from the actions performed by the agents.
-
-To run the training, we need to: 
-- 1. Select the environment we need to train: `_init_.py` > `gym.register(id="[NAME OF THE ENVIRONMENT")`
-- 2. Select the algorithm we want to use: `_init_.py` > `kwargs={[TYPE OF ALGORITHM]}`
-- 3. Specify the number of envs we want to train: In the VScode terminal: `--num_envs x`
-- 4. Run the command (eg for managed based env): `python scripts\reinforcement_learning\skrl\train.py --task Isaac-Velocity-Rough-Anymal-C-v0 num_env 4`
-
-
-### Gymnasium: 
-https://gymnasium.farama.org/index.html 
+# 2. REGISTER THE ENVIRONMENT ON GYMNASIUM
+`C:\Users\[YOUR USER]\isaaclab\source\isaaclab_tasks\isaaclab_tasks\manager_based\classic\cartpole\__init__.py`
+`https://gymnasium.farama.org/index.html `
 
 <img width="2025" height="484" alt="image" src="https://github.com/user-attachments/assets/7a053c3a-1520-481b-be4c-48bb5f1ccb67" />
 
@@ -336,14 +326,7 @@ Some of the Gymnasium custom functions:
 - Step: `env.step(action)` — apply an action, advance the sim in time, and return (observation, reward, terminated, truncated, info).
 - Close: `env.close()` — release windows/processes/resources used by the environment.
 - Spaces: `env.observation_space / env.action_space` — describe the shape, type and bounds of observations/actions so agents format data correctly.
-- Render: `render()` shows or returns a visual frame of the environment so you can see what the simulator is doing (for debugging, recording, or human viewing).
 - Wrappers: `gym.wrappers.* (e.g., RecordVideo, TimeLimit)` — add recording, time limits, or transforms. Allows users to modify or adapt its interface without changing the original code
-
-
-
-
-## Register Gym Environments: `__init__.py`
-`C:\Users\myali\isaaclab\source\isaaclab_tasks\isaaclab_tasks\manager_based\classic\cartpole\__init__.py`
 
 - Once your code is registered within Gymnasium, it can be easily accessed from anywhere by using these templated API calls.
 
@@ -423,9 +406,332 @@ gym.register(
 
 ```
 
+# 3. RUN TRAINING: `train.py`
+In this example, we'll be using the training script with the RL-Games library: `C:\Users\[YOUR USER]\isaaclab\scripts\reinforcement_learning\rl_games\train.py`
 
+To continue the comparison with video game, this is when we push Play and the characters start performing their actions on the level. Or when the crew ***builds the scenario***, allocates the props and the actors ***start the rehearsal***.
+This is when we implement Reinforcement Learning and the algorithm starts learning with the results from the actions performed by the agents.
 
+To run the training, we need to: 
+- 1. Select the environment we need to train: `_init_.py` > `gym.register(id="[NAME OF THE ENVIRONMENT")`
+- 2. Select the algorithm we want to use: `_init_.py` > `kwargs={[TYPE OF ALGORITHM]}`
+- 3. Specify the number of envs we want to train: In the VScode terminal: `--num_envs x`
+- 4. Run the command (eg for managed based env): `python scripts\reinforcement_learning\skrl\train.py --task Isaac-Velocity-Rough-Anymal-C-v0 num_env 4`
+
+`train.py` is a launcher script that boots Isaac Sim, loads an Isaac Lab task via Gymnasium, wraps it for the RL-Games library, and runs training. It orchestrates the entire training pipeline for robot learning tasks.
+Each train.py under the reinforcement_learning folder in this project wires Isaac Lab to a different RL library (skrl, rl-games ...), each library using different RL algorithms (PPO, IPPO, MAPPO, AMP etc)
+
+1. The script first builds the simulated world, then env (cartpole, humanoid, etc.) using Gymnasium and Isaac Lab.
+2. Then RL-Games decides which actions the agent should perform next (like a "coach"), based on observations of the rewards. It  updates the neural network policy (the "game tactics") to do better.
+3. The environment (Isaac Lab/Isaac Sim) applies those actions to the simulated robot, runs physics, and returns the next state and reward.
+
+**3.1: PARSE COMMAND-LINE ARGUMENTS**
+```py
+"""Script to train RL agent with RL-Games."""
+
+"""Launch Isaac Sim Simulator first."""
+
+import argparse
+import sys
+from distutils.util import strtobool
+
+from isaaclab.app import AppLauncher
+
+# add argparse arguments
+parser = argparse.ArgumentParser(description="Train an RL agent with RL-Games.")
+parser.add_argument("--video", action="store_true", default=False, help="Record videos during training.")
+parser.add_argument("--video_length", type=int, default=200, help="Length of the recorded video (in steps).")
+parser.add_argument("--video_interval", type=int, default=2000, help="Interval between video recordings (in steps).")
+parser.add_argument("--num_envs", type=int, default=None, help="Number of environments to simulate.")
+parser.add_argument("--task", type=str, default=None, help="Name of the task.")
+parser.add_argument(
+    "--agent", type=str, default="rl_games_cfg_entry_point", help="Name of the RL agent configuration entry point."
+)
+parser.add_argument("--seed", type=int, default=None, help="Seed used for the environment")
+parser.add_argument(
+    "--distributed", action="store_true", default=False, help="Run training with multiple GPUs or nodes."
+)
+parser.add_argument("--checkpoint", type=str, default=None, help="Path to model checkpoint.")
+parser.add_argument("--sigma", type=str, default=None, help="The policy's initial standard deviation.")
+parser.add_argument("--max_iterations", type=int, default=None, help="RL Policy training iterations.")
+parser.add_argument("--wandb-project-name", type=str, default=None, help="the wandb's project name")
+parser.add_argument("--wandb-entity", type=str, default=None, help="the entity (team) of wandb's project")
+parser.add_argument("--wandb-name", type=str, default=None, help="the name of wandb's run")
+parser.add_argument(
+    "--track",
+    type=lambda x: bool(strtobool(x)),
+    default=False,
+    nargs="?",
+    const=True,
+    help="if toggled, this experiment will be tracked with Weights and Biases",
+)
+parser.add_argument("--export_io_descriptors", action="store_true", default=False, help="Export IO descriptors.")
+# append AppLauncher cli args
+AppLauncher.add_app_launcher_args(parser)
+# parse the arguments
+args_cli, hydra_args = parser.parse_known_args()
+# always enable cameras to record video
+if args_cli.video:
+    args_cli.enable_cameras = True
+
+# clear out sys.argv for Hydra
+sys.argv = [sys.argv[0]] + hydra_args
 ```
+
+**3.2: LAUNCH ISAACSIM**
+Uses AppLauncher to boot up the NVIDIA Isaac Sim physics simulator.
+
+```py
+# launch omniverse app
+app_launcher = AppLauncher(args_cli)
+simulation_app = app_launcher.app
+```
+
+**3.3: IMPORTS**
+
+```py
+"""Rest everything follows."""
+
+import gymnasium as gym
+import math
+import os
+import random
+from datetime import datetime
+
+import omni
+from rl_games.common import env_configurations, vecenv
+from rl_games.common.algo_observer import IsaacAlgoObserver
+from rl_games.torch_runner import Runner
+
+from isaaclab.envs import (
+    DirectMARLEnv,
+    DirectMARLEnvCfg,
+    DirectRLEnvCfg,
+    ManagerBasedRLEnvCfg,
+    multi_agent_to_single_agent,
+)
+from isaaclab.utils.assets import retrieve_file_path
+from isaaclab.utils.dict import print_dict
+from isaaclab.utils.io import dump_yaml
+
+from isaaclab_rl.rl_games import MultiObserver, PbtAlgoObserver, RlGamesGpuEnv, RlGamesVecEnvWrapper
+
+import isaaclab_tasks  # noqa: F401
+from isaaclab_tasks.utils.hydra import hydra_task_config
+```
+
+### MAIN TRAINING FUNCTION
+
+This is the core function that sets up and runs the training process.
+It takes configuration settings (loaded from YAML files via the decorator above) and command-line arguments to:
+1. Configure the simulation environment (how many robots to simulate, which GPU to use)
+2. Set up the AI agent that will learn to control the robot
+3. Run the training loop where the agent learns through trial and error
+
+**3.4: CONFIGURE THE ENVIRONMENT**
+- Loads the environment configuration using Hydra, then overrides with CLI arguments (num_envs, device, seed, max_iterations, etc.).
+
+```py
+@hydra_task_config(args_cli.task, args_cli.agent)
+def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agent_cfg: dict):
+    """Train with RL-Games agent."""
+
+    # =========================================================================
+    # SECTION 4: CONFIGURE THE ENVIRONMENT
+    # Loads the environment configuration using Hydra, then overrides with
+    # CLI arguments (num_envs, device, seed, max_iterations, etc.).
+    # =========================================================================
+
+    # ====================These functions override default env configs with command line args===========
+    # override configurations with non-hydra CLI arguments
+    env_cfg.scene.num_envs = args_cli.num_envs if args_cli.num_envs is not None else env_cfg.scene.num_envs
+    env_cfg.sim.device = args_cli.device if args_cli.device is not None else env_cfg.sim.device
+    # check for invalid combination of CPU device with distributed training
+    if args_cli.distributed and args_cli.device is not None and "cpu" in args_cli.device:
+        raise ValueError(
+            "Distributed training is not supported when using CPU device. "
+            "Please use GPU device (e.g., --device cuda) for distributed training."
+        )
+
+    # update agent device to match simulation device
+    if args_cli.device is not None:
+        agent_cfg["params"]["config"]["device"] = args_cli.device
+        agent_cfg["params"]["config"]["device_name"] = args_cli.device
+
+    # randomly sample a seed if seed = -1
+    if args_cli.seed == -1:
+        args_cli.seed = random.randint(0, 10000)
+
+    agent_cfg["params"]["seed"] = args_cli.seed if args_cli.seed is not None else agent_cfg["params"]["seed"]
+    agent_cfg["params"]["config"]["max_epochs"] = (
+        args_cli.max_iterations if args_cli.max_iterations is not None else agent_cfg["params"]["config"]["max_epochs"]
+    )
+    if args_cli.checkpoint is not None:
+        resume_path = retrieve_file_path(args_cli.checkpoint)
+        agent_cfg["params"]["load_checkpoint"] = True
+        agent_cfg["params"]["load_path"] = resume_path
+        print(f"[INFO]: Loading model checkpoint from: {agent_cfg['params']['load_path']}")
+    train_sigma = float(args_cli.sigma) if args_cli.sigma is not None else None
+
+    # multi-gpu training config
+    if args_cli.distributed:
+        agent_cfg["params"]["seed"] += app_launcher.global_rank
+        agent_cfg["params"]["config"]["device"] = f"cuda:{app_launcher.local_rank}"
+        agent_cfg["params"]["config"]["device_name"] = f"cuda:{app_launcher.local_rank}"
+        agent_cfg["params"]["config"]["multi_gpu"] = True
+        # update env config device
+        env_cfg.sim.device = f"cuda:{app_launcher.local_rank}"
+
+    # set the environment seed (after multi-gpu config for updated rank from agent seed)
+    # note: certain randomizations occur in the environment initialization so we set the seed here
+    env_cfg.seed = agent_cfg["params"]["seed"]
+```
+
+**3.5: SET UP LOGGING**
+- This section creates a folder structure to save all training data and results.
+- During training, the AI agent's progress (performance metrics, learned behaviors, configuration settings, and optional video recordings) are saved to these folders.
+- This makes it easy to track experiments, compare different training runs, and 
+    resume training later if needed.
+
+```py
+ # specify directory for logging experiments
+    config_name = agent_cfg["params"]["config"]["name"]
+    log_root_path = os.path.join("logs", "rl_games", config_name)
+    if "pbt" in agent_cfg and agent_cfg["pbt"]["directory"] != ".":
+        log_root_path = os.path.join(agent_cfg["pbt"]["directory"], log_root_path)
+    else:
+        log_root_path = os.path.abspath(log_root_path)
+
+    print(f"[INFO] Logging experiment in directory: {log_root_path}")
+    # specify directory for logging runs
+    log_dir = agent_cfg["params"]["config"].get("full_experiment_name", datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+    # set directory into agent config
+    # logging directory path: <train_dir>/<full_experiment_name>
+    agent_cfg["params"]["config"]["train_dir"] = log_root_path
+    agent_cfg["params"]["config"]["full_experiment_name"] = log_dir
+    wandb_project = config_name if args_cli.wandb_project_name is None else args_cli.wandb_project_name
+    experiment_name = log_dir if args_cli.wandb_name is None else args_cli.wandb_name
+
+    # dump the configuration into log-directory
+    dump_yaml(os.path.join(log_root_path, log_dir, "params", "env.yaml"), env_cfg)
+    dump_yaml(os.path.join(log_root_path, log_dir, "params", "agent.yaml"), agent_cfg)
+    print(f"Exact experiment name requested from command line: {os.path.join(log_root_path, log_dir)}")
+
+    # read configurations about the agent-training
+    rl_device = agent_cfg["params"]["config"]["device"]
+    clip_obs = agent_cfg["params"]["env"].get("clip_observations", math.inf)
+    clip_actions = agent_cfg["params"]["env"].get("clip_actions", math.inf)
+    obs_groups = agent_cfg["params"]["env"].get("obs_groups")
+    concate_obs_groups = agent_cfg["params"]["env"].get("concate_obs_groups", True)
+
+    # set the IO descriptors export flag if requested
+    if isinstance(env_cfg, ManagerBasedRLEnvCfg):
+        env_cfg.export_io_descriptors = args_cli.export_io_descriptors
+    else:
+        omni.log.warn(
+            "IO descriptors are only supported for manager based RL environments. No IO descriptors will be exported."
+        )
+
+    # set the log directory for the environment (works for all environment types)
+    env_cfg.log_dir = os.path.join(log_root_path, log_dir)
+```
+
+**3.6: CREATE THE TRAINING ENVIRONMENT**: gym.make()
+- Uses `gym.make()` to instantiate the environment, then wraps it for rl-games compatibility and optional video recording.
+
+```py
+# Create the Gymnasium environment where the AI agent will learn.
+    # The "task" defines what scenario to simulate (e.g., cartpole, robot arm).
+    # create isaac environment
+    env = gym.make(args_cli.task, cfg=env_cfg, render_mode="rgb_array" if args_cli.video else None)
+
+    # convert to single-agent instance if required by the RL algorithm
+    if isinstance(env.unwrapped, DirectMARLEnv):
+        env = multi_agent_to_single_agent(env)
+
+    # wrap for video recording
+    if args_cli.video:
+        video_kwargs = {
+            "video_folder": os.path.join(log_root_path, log_dir, "videos", "train"),
+            "step_trigger": lambda step: step % args_cli.video_interval == 0,
+            "video_length": args_cli.video_length,
+            "disable_logger": True,
+        }
+        print("[INFO] Recording videos during training.")
+        print_dict(video_kwargs, nesting=4)
+        env = gym.wrappers.RecordVideo(env, **video_kwargs)
+
+    # wrap around environment for rl-games
+    env = RlGamesVecEnvWrapper(env, rl_device, clip_obs, clip_actions, obs_groups, concate_obs_groups)
+
+    # register the environment to rl-games registry
+    # note: in agents configuration: environment name must be "rlgpu"
+    vecenv.register(
+        "IsaacRlgWrapper", lambda config_name, num_actors, **kwargs: RlGamesGpuEnv(config_name, num_actors, **kwargs)
+    )
+    env_configurations.register("rlgpu", {"vecenv_type": "IsaacRlgWrapper", "env_creator": lambda **kwargs: env})
+
+    # set number of actors into agent config
+    agent_cfg["params"]["config"]["num_actors"] = env.unwrapped.num_envs
+```
+
+**3.7: RUN TRAINING**: runner.run()
+- Uses rl-games library Runner class (`runner.run()`) to execute the RL training loop.
+
+```py
+ # create runner from rl-games
+
+    if "pbt" in agent_cfg and agent_cfg["pbt"]["enabled"]:
+        observers = MultiObserver([IsaacAlgoObserver(), PbtAlgoObserver(agent_cfg, args_cli)])
+        runner = Runner(observers)
+    else:
+        runner = Runner(IsaacAlgoObserver())
+
+    runner.load(agent_cfg)
+
+    # reset the agent and env
+    runner.reset()
+    # train the agent
+
+    global_rank = int(os.getenv("RANK", "0"))
+    if args_cli.track and global_rank == 0:
+        if args_cli.wandb_entity is None:
+            raise ValueError("Weights and Biases entity must be specified for tracking.")
+        import wandb
+
+        wandb.init(
+            project=wandb_project,
+            entity=args_cli.wandb_entity,
+            name=experiment_name,
+            sync_tensorboard=True,
+            monitor_gym=True,
+            save_code=True,
+        )
+        if not wandb.run.resumed:
+            wandb.config.update({"env_cfg": env_cfg.to_dict()})
+            wandb.config.update({"agent_cfg": agent_cfg})
+
+    if args_cli.checkpoint is not None:
+        runner.run({"train": True, "play": False, "sigma": train_sigma, "checkpoint": resume_path})
+    else:
+        runner.run({"train": True, "play": False, "sigma": train_sigma})
+```
+
+**3.8: CLEAN UP**: `env.close()`
+- Closes the environment and simulation app when done.
+
+```py
+    # close the simulator
+    env.close()
+
+
+if __name__ == "__main__":
+    # run the main function
+    main()
+    # close sim app
+    simulation_app.close()
+```
+
 train.py                        GYMNASIUM                     __init__.py                      cartpole_env_cfg.py
 ════════                        ═════════                     ═══════════                      ═══════════════════
     │                               │                              │                                   │
