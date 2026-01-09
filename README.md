@@ -748,7 +748,7 @@ if __name__ == "__main__":
 Open a Terminal inside VS Code and run the command: `python scripts\reinforcement_learning\rl_games\train.py --task Isaac-Cartpole-v0`
     
 - You can also specify the number of envs you want the simulation to run with `--num_envs X`
-`python scripts\reinforcement_learning\rl_games\train.py --task Isaac-Cartpole-v0 --num_envs 4`
+`python scripts\reinforcement_learning\rl_games\train.py --task Isaac-Cartpole-v0 --num_envs 512`
     
 - You can also run different envs that are supported by this project, eg:
   - For Direct mode: `python scripts\reinforcement_learning\skrl\train.py --task Isaac-Humanoid-Direct-v0 --num_envs 4`
