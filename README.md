@@ -42,7 +42,7 @@ This simulation will be later registered in Gymnasium which will plug its observ
 
 <img width="2025" height="484" alt="image" src="https://github.com/user-attachments/assets/7a053c3a-1520-481b-be4c-48bb5f1ccb67" />
 
-
+```
 ╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
 ║               ISAAC LAB TRAINING FLOW - CALL DIAGRAM WITH GYMNASIUM (Time ↓)                                                    ╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
@@ -178,3 +178,4 @@ DETAILED EXECUTION SEQUENCE:
    OBJECT: action array | GOAL: Step simulation, get obs/reward/done/info for policy update
 
 ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+```
