@@ -406,7 +406,7 @@ gym.register(
 
 ```
 
-# 3. RUN TRAINING: `train.py`
+# 3. TRAIN: `train.py`
 In this example, we'll be using the training script with the RL-Games library: `C:\Users\[YOUR USER]\isaaclab\scripts\reinforcement_learning\rl_games\train.py`
 
 To continue the comparison with video game, this is when we push Play and the characters start performing their actions on the level. Or when the crew ***builds the scenario***, allocates the props and the actors ***start the rehearsal***.
@@ -418,6 +418,8 @@ To run the training, we need to:
 - 3. Specify the number of envs we want to train: In the VScode terminal: `--num_envs x`
 - 4. Run the command (eg for managed based env): `python scripts\reinforcement_learning\skrl\train.py --task Isaac-Velocity-Rough-Anymal-C-v0 num_env 4`
 
+## 3.1: The training script
+
 `train.py` is a launcher script that boots Isaac Sim, loads an Isaac Lab task via Gymnasium, wraps it for the RL-Games library, and runs training. It orchestrates the entire training pipeline for robot learning tasks.
 Each train.py under the reinforcement_learning folder in this project wires Isaac Lab to a different RL library (skrl, rl-games ...), each library using different RL algorithms (PPO, IPPO, MAPPO, AMP etc)
 
@@ -425,7 +427,7 @@ Each train.py under the reinforcement_learning folder in this project wires Isaa
 2. Then RL-Games decides which actions the agent should perform next (like a "coach"), based on observations of the rewards. It  updates the neural network policy (the "game tactics") to do better.
 3. The environment (Isaac Lab/Isaac Sim) applies those actions to the simulated robot, runs physics, and returns the next state and reward.
 
-**3.1: PARSE COMMAND-LINE ARGUMENTS**
+**PARSE COMMAND-LINE ARGUMENTS**
 ```py
 """Script to train RL agent with RL-Games."""
 
@@ -478,7 +480,7 @@ if args_cli.video:
 sys.argv = [sys.argv[0]] + hydra_args
 ```
 
-**3.2: LAUNCH ISAACSIM**
+**LAUNCH ISAACSIM**
 Uses AppLauncher to boot up the NVIDIA Isaac Sim physics simulator.
 
 ```py
@@ -487,7 +489,7 @@ app_launcher = AppLauncher(args_cli)
 simulation_app = app_launcher.app
 ```
 
-**3.3: IMPORTS**
+**IMPORTS**
 
 ```py
 """Rest everything follows."""
@@ -528,7 +530,7 @@ It takes configuration settings (loaded from YAML files via the decorator above)
 2. Set up the AI agent that will learn to control the robot
 3. Run the training loop where the agent learns through trial and error
 
-**3.4: CONFIGURE THE ENVIRONMENT**
+**CONFIGURE THE ENVIRONMENT**
 - Loads the environment configuration using Hydra, then overrides with CLI arguments (num_envs, device, seed, max_iterations, etc.).
 
 ```py
@@ -587,7 +589,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     env_cfg.seed = agent_cfg["params"]["seed"]
 ```
 
-**3.5: SET UP LOGGING**
+**SET UP LOGGING**
 - This section creates a folder structure to save all training data and results.
 - During training, the AI agent's progress (performance metrics, learned behaviors, configuration settings, and optional video recordings) are saved to these folders.
 - This makes it easy to track experiments, compare different training runs, and 
@@ -636,7 +638,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     env_cfg.log_dir = os.path.join(log_root_path, log_dir)
 ```
 
-**3.6: CREATE THE TRAINING ENVIRONMENT**: gym.make()
+**CREATE THE TRAINING ENVIRONMENT**: gym.make()
 - Uses `gym.make()` to instantiate the environment, then wraps it for rl-games compatibility and optional video recording.
 
 ```py
@@ -675,7 +677,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     agent_cfg["params"]["config"]["num_actors"] = env.unwrapped.num_envs
 ```
 
-**3.7: RUN TRAINING**: runner.run()
+**RUN TRAINING**: runner.run()
 - Uses rl-games library Runner class (`runner.run()`) to execute the RL training loop.
 
 ```py
@@ -717,7 +719,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         runner.run({"train": True, "play": False, "sigma": train_sigma})
 ```
 
-**3.8: CLEAN UP**: `env.close()`
+**CLEAN UP**: `env.close()`
 - Closes the environment and simulation app when done.
 
 ```py
@@ -732,6 +734,23 @@ if __name__ == "__main__":
     simulation_app.close()
 ```
 
+## 3.2: Run Training
+
+Open a Terminal inside VS Code and run the command: `python scripts\reinforcement_learning\rl_games\train.py --task Isaac-Cartpole-v0`
+    
+- You can also specify the number of envs you want the simulation to run with `--num_envs X`
+`python scripts\reinforcement_learning\rl_games\train.py --task Isaac-Cartpole-v0 --num_envs 4`
+    
+- You can also run different envs that are supported by this project, eg:
+  - For Direct mode: `python scripts\reinforcement_learning\skrl\train.py --task Isaac-Humanoid-Direct-v0 --num_envs 4`
+  - For Manager mode: `python scripts\reinforcement_learning\skrl\train.py --task Isaac-Velocity-Rough-Anymal-C-v0 --num_envs 4`
+
+- You can select any other environment from the Nvidia list of available environments `https://isaac-sim.github.io/IsaacLab/main/source/overview/environments.html` and run them (manager/direct) with: `python scripts\reinforcement_learning\skrl\train.py --task [ENVIRONMENT NAME] --num_envs (x)`
+  - Some might not work if they are not implemented/registered in this project `isaaclab`
+ 
+
+Request and Response flow:
+```
 train.py                        GYMNASIUM                     __init__.py                      cartpole_env_cfg.py
 ════════                        ═════════                     ═══════════                      ═══════════════════
     │                               │                              │                                   │
