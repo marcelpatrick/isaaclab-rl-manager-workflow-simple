@@ -300,6 +300,7 @@ class CartpoleEnvCfg(ManagerBasedRLEnvCfg):
 <img width="1753" height="589" alt="image" src="https://github.com/user-attachments/assets/434ddbb8-6f89-4dd1-b176-87651410e2fa" />
 
 # 2. RUN TRAINING: `train.py`
+`C:\Users\[YOUR USER]\isaaclab\scripts\reinforcement_learning\rl_games\train.py`
 
 To continue the comparison with video game, this is when we push Play and the characters start performing their actions on the level. Or when the crew ***builds the scenario***, allocates the props and the actors ***start the rehearsal***.
 This is when we implement Reinforcement Learning and the algorithm starts learning with the results from the actions performed by the agents.
