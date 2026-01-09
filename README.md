@@ -48,7 +48,7 @@ Code Map:
 
 ## 1.1: Building the Environment
 
-**1.1.0: Import Libraries**
+**Import Libraries**
 
 ```py
 import math
@@ -73,7 +73,7 @@ import isaaclab_tasks.manager_based.classic.cartpole.mdp as mdp
 from isaaclab_assets.robots.cartpole import CARTPOLE_CFG  # isort:skip
 ```
 
-**1.1.1: Scene Design and Configuration: CartpoleSceneCfg()**
+**Scene Design and Configuration: CartpoleSceneCfg()**
 
 - This is when we ***design the level/scenario*** and ***cast the actors*** that will perform.
 - Objects (entities) configuration: Ground, Lights and the Cartpole
@@ -128,7 +128,7 @@ class ActionsCfg:
     joint_effort = mdp.JointEffortActionCfg(asset_name="robot", joint_names=["slider_to_cart"], scale=100.0)
 ```
 
-**1.1.2: Markov Decision Process (MDP)**
+### Markov Decision Process (MDP)
 MDP is a mathematical model that, given an agent's current state and its action, defines its what happens to it, updates its new state and calculates a reward for the result of its action. 
 The RL algorithm (skrl, rl_games etc) will then take the result of the reward function to learn and suggest the next best action for the agent that optimizes the reward function. 
 
