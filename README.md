@@ -110,7 +110,7 @@ class CartpoleSceneCfg(InteractiveSceneCfg):
 
 - This is when we define the ***Game Rules***
 
-**1.2.1: Action Configuration Class: `ActionsCfg`**
+**Action Configuration Class: `ActionsCfg`**
 - Converts the RL action output (a float) into a physical force/effort applied to the chosen joint (in Newtons).
 - eg: So the policy outputs, for example, 0.3, and the action definition turns that into: 0.3 × scale (100) = 30 units of joint effort applied to the slider_to_cart joint
 
