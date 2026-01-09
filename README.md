@@ -6,6 +6,15 @@
 
 **Objective**: The goal of this project is to render a cartpole simulation on IsaacSim (using a manager workflow) and use Reinforcement Learning to train the agents in this simulation.
 
+It uses **IsaacLab**
+- Isaaclab is a library that automates (with code) the training of robotics simulations on isaacsim.
+- Without IsaacLab, you would be able to make 3d world simulations with 3d assets but not use it with RL to train robot policies.
+- Isaac Lab is pre-written template and boilerplate code from NVIDIA that handles:
+  - Environment templates (cartpole, humanoid configs, task definitions)
+  - Manager templates (action/observation/reward processing)
+  - RL framework adapters (wrappers for RL-Games, skrl, SB3)
+  - Utility code (logging, checkpointing, asset loading)
+
 **Code Map: General**: Here is what the main blocks of code do and how they connect:
 
 <img width="2039" height="3317" alt="image" src="https://github.com/user-attachments/assets/dcc1f51b-75b8-423f-ae0e-e81378102268" />
