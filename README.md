@@ -449,6 +449,7 @@ Proximal Policy Optimization (PPO) example:
 
 ### Library
 - It's the code implementation of the learning flow.
+- eg. skrl, rl-games
   1. Runs the simulation loop (observations, performs actions, calculates rewards, stores it)
   2. Transforms the algorithm formula into code to define how the neural network (the brain) learns
      -  takes the rewards
