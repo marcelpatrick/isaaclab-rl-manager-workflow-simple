@@ -426,6 +426,88 @@ To run the training, we need to:
 - 2. Select the algorithm we want to use: `_init_.py` > `kwargs={[TYPE OF ALGORITHM]}`
 - 3. Specify the number of envs we want to train: In the VScode terminal: `--num_envs x`
 - 4. Run the command (eg for managed based env): `python scripts\reinforcement_learning\skrl\train.py --task Isaac-Velocity-Rough-Anymal-C-v0 num_env 4`
+ 
+## 3.0. Algorithm, Neural Network, Policy, Library
+- For the training to happen we need these 4 components interacting:
+
+### Algorithm
+- This is just a formula (mathematical representation) of how the robot should learn. Usually published in a paper.
+- Eg: PPO, IPPO, MAPPO, AMP etc
+
+Proximal Policy Optimization (PPO) example:
+<img width="765" height="96" alt="image" src="https://github.com/user-attachments/assets/4123a7a3-e3a9-46d7-b123-f502d90c1d49" />
+
+### Neural Network
+- The robot brain that is learning.
+- Takes the policy loss and updates its policy (learning)
+
+### Policy
+- Rules for what the robot does
+- Tells a robot what action to take based on its current observation of the environment
+- What the robot does changes after it learns (after its brain - the neural network - gets updated)
+- Policy is the robot's learned behaviour that lives inside the neural network (its brain)
+
+### Library
+- It's the code implementation of the learning flow.
+  1. Runs the simulation loop (observations, performs actions, calculates rewards, stores it)
+  2. Transforms the algorithm formula into code to define how the neural network (the brain) learns
+     -  takes the rewards
+     -  converts rewards into policy change (loss)
+  3. Uses policy loss to update the weights of the Neural Network.
+  4. This generates an updated policy
+
+<details>
+  <summary>Example:</summary>
+
+```py
+# Phase 1: COLLECT DATA
+for step in range(2048):
+    obs = env.get_obs()
+    action = policy(obs)
+    obs, reward, done = env.step(action)  # ← Get reward
+    storage.add(obs, action, reward)      # ← Save reward
+
+
+# Phase 2: LEARN FROM REWARDS
+for epoch in range(5):
+    batch = storage.sample()  # Get: actions, observations, AND REWARDS
+    
+    # ════════════════════════════════════════════════════
+    # HERE'S WHERE REWARDS TELL THE NETWORK HOW TO LEARN!
+    # ════════════════════════════════════════════════════
+    
+    # Step 1: Calculate "advantage" using rewards
+    advantage = calculate_advantage(batch.rewards, batch.values)
+    # ↑ This says: "Was this action better or worse than expected?"
+    # The advantage is where rewards become learning signals
+    
+    # Calculates the Policy change ratio
+    ratio = new_prob / old_prob
+    # Smoothens out the policy change ratio
+    clipped_ratio = clip(ratio, 0.8, 1.2)
+
+    # Step 2: Calculate policy loss using rewards
+    # The loss uses BOTH the ratio AND the advantage (from rewards!)
+    policy_loss = -min(ratio * advantage, clipped_ratio * advantage)
+    #                              ↑                        ↑
+    #                          REWARDS determine this value!
+    
+    # Step 3: Update neural network based on this loss
+    policy.backward(policy_loss)  # ← Network learns based on rewards!
+    policy.update_weights()
+```
+</details>
+
+```
+✓ Simulation loop runs (performs actions, calculates rewards) 
+    ↓
+✓ Algorithm code takes rewards and converts them into policy loss
+    ↓
+✓ Policy loss is used to update weights of the neural net
+    ↓
+✓ The Robot policy is UPDATED
+```
+
 
 ## 3.1: The training script
 
